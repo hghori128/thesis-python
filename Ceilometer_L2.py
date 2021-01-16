@@ -2,7 +2,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import math
-import numpy.matlib
+import numpy.matlib as matlib
+
+
+from matplotlib import cm
 
 import pandas as pd
 import netCDF4 
@@ -81,7 +84,7 @@ print(d_daysum)
 
 
 
-t = netCDF4.Dataset("/Users/hannanghori/Documents/university shit/4th year/Thesis/Cronyn/L2/2020/04/01/L2_0-20000-0-73009_A20200401.nc")
+t = nc.Dataset("/Users/hannanghori/Documents/university shit/4th year/Thesis/Cronyn/L2/2020/04/01/L2_0-20000-0-73009_A20200401.nc")
 beta_att_test = t.variables['attenuated_backscatter_0']
 range_test = t.variables['altitude']
 time_test = t.variables['time']
@@ -97,11 +100,14 @@ plt.plot(beta_att_test, range_test)
 # The further corrections done to beta_raw to obtain beta_att should allow 
 # for the same manipulation to normalize and average 
 
+#The overlap file is an array of 1024 values. 
+# Resize this array to be 511 values in order to multiply with beta_att
 
 overlap = np.loadtxt('data.txt',dtype = float)
 print(overlap)
 overlap_0 = np.resize(overlap,[511,2])
 overlap_atten = overlap_0[:, 0]
+
 
 a = int(len(beta_att_test)/2)
 print(a)
@@ -117,6 +123,41 @@ print(d_nightsum_test)
 plt.semilogx(x[0:55],y[0:55])
 plt.xlabel('Normalized, Range-Corrected Attenuated Backscatter')
 plt.ylabel('Height (m)')
-plt.title('Night Average Signal: 2020/04/01')
+plt.title('Day Average Signal: 2020/04/01')
 
+# %%
+#-------------Attempt at making attenuated backscatter colour plot
+
+# Set any value less than or equal to 0 in the beta_att values to 1
+from matplotlib.ticker import MaxNLocator
+from matplotlib.colors import BoundaryNorm
+
+beta = []
+for f in beta_att_test:
+  if np.any(f >= 0):
+    beta.append(f)
+      
+  else:
+    beta.append(1)
+
+
+levels = MaxNLocator(nbins=15).tick_values(1, np.max(np.log(beta_abs)))
+
+cmap = plt.get_cmap('RdYlBu')
+#cmap = set_color('jet')
+
+norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
+
+betaT = np.transpose(beta)
+#fig, (ax0) = plt.subplots(nrows=2)
+beta_abs = np.abs(beta)
+im = plt.pcolormesh(time, range, np.log10(beta_abs), cmap=cmap, vmin=None, vmax=None, shading='flat')
+fig.colorbar(im)
+plt.title('Normalized, Attenuated Backscatter Power')
+plt.xlabel('Time UT [h]')
+plt.ylabel('Altitude a.s.l. (m)')
+plt.show()
+
+# %%
+print(beta)
 # %%
